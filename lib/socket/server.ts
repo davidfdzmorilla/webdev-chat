@@ -19,6 +19,12 @@ export function initSocketServer(httpServer: HTTPServer) {
   io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
 
+    // User presence
+    socket.on('user_online', (userId: string) => {
+      socket.data.userId = userId;
+      io.emit('user_status_changed', { userId, status: 'online' });
+    });
+
     // Join room
     socket.on('join_room', async (roomId: string) => {
       socket.join(roomId);
@@ -67,6 +73,12 @@ export function initSocketServer(httpServer: HTTPServer) {
       console.log('Client disconnected:', socket.id);
       if (socket.data.subscriber) {
         await socket.data.subscriber.quit();
+      }
+      if (socket.data.userId) {
+        io.emit('user_status_changed', {
+          userId: socket.data.userId,
+          status: 'offline',
+        });
       }
     });
   });

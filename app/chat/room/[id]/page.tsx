@@ -6,6 +6,7 @@ import { useSession } from '@/lib/auth/client';
 import { getMessages, sendMessage } from '@/app/actions/messages';
 import { leaveRoom } from '@/app/actions/rooms';
 import { getSocket } from '@/lib/socket/client';
+import { updatePresence } from '@/app/actions/presence';
 
 interface Message {
   id: string;
@@ -35,9 +36,13 @@ export default function RoomPage({ params }: { params: { id: string } }) {
     if (session) {
       loadMessages();
 
+      // Update presence to online
+      updatePresence('online');
+
       // WebSocket real-time messaging
       const socket = getSocket();
       socket.emit('join_room', params.id);
+      socket.emit('user_online', session.user.id);
 
       socket.on('new_message', (message: Message) => {
         setMessages((prev) => [...prev, message]);
@@ -46,6 +51,7 @@ export default function RoomPage({ params }: { params: { id: string } }) {
       return () => {
         socket.emit('leave_room', params.id);
         socket.off('new_message');
+        updatePresence('offline');
       };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
