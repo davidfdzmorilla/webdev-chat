@@ -139,7 +139,7 @@ export default function ChatPage() {
                     onClick={() => handleJoinRoom(room.id)}
                     className="mt-3 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
                   >
-                    Join Room
+                    Join
                   </button>
                 </div>
               ))}
@@ -159,9 +159,12 @@ export default function ChatPage() {
                   {room.description && (
                     <p className="text-gray-600 text-sm mt-1">{room.description}</p>
                   )}
-                  <button className="mt-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
-                    Open Room
-                  </button>
+                  <a
+                    href={`/chat/room/${room.id}`}
+                    className="mt-3 inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                  >
+                    Open
+                  </a>
                 </div>
               ))}
               {privateRooms.length === 0 && (
