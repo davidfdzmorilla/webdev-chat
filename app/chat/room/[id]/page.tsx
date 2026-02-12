@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from '@/lib/auth/client';
 import { getMessages, sendMessage } from '@/app/actions/messages';
 import { leaveRoom } from '@/app/actions/rooms';
+import { getSocket } from '@/lib/socket/client';
 
 interface Message {
   id: string;
@@ -33,10 +34,21 @@ export default function RoomPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     if (session) {
       loadMessages();
-      // Poll for new messages every 3 seconds (will be replaced with WebSocket)
-      const interval = setInterval(loadMessages, 3000);
-      return () => clearInterval(interval);
+
+      // WebSocket real-time messaging
+      const socket = getSocket();
+      socket.emit('join_room', params.id);
+
+      socket.on('new_message', (message: Message) => {
+        setMessages((prev) => [...prev, message]);
+      });
+
+      return () => {
+        socket.emit('leave_room', params.id);
+        socket.off('new_message');
+      };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, params.id]);
 
   const loadMessages = async () => {
@@ -44,8 +56,8 @@ export default function RoomPage({ params }: { params: { id: string } }) {
       setLoading(true);
       const msgs = await getMessages(params.id);
       setMessages(msgs);
-    } catch (error) {
-      console.error('Failed to load messages:', error);
+    } catch (err) {
+      console.error('Failed to load messages:', err);
     } finally {
       setLoading(false);
     }
@@ -57,13 +69,21 @@ export default function RoomPage({ params }: { params: { id: string } }) {
 
     setSending(true);
     try {
-      await sendMessage({
+      const result = await sendMessage({
         roomId: params.id,
         content: newMessage,
       });
+
+      // Emit via WebSocket for real-time delivery
+      const socket = getSocket();
+      socket.emit('send_message', {
+        roomId: params.id,
+        message: result.message,
+      });
+
       setNewMessage('');
-      await loadMessages();
-    } catch (error) {
+    } catch (err) {
+      console.error('Failed to send message:', err);
       alert('Failed to send message');
     } finally {
       setSending(false);
@@ -75,7 +95,8 @@ export default function RoomPage({ params }: { params: { id: string } }) {
       try {
         await leaveRoom(params.id);
         router.push('/chat');
-      } catch (error) {
+      } catch (err) {
+        console.error('Failed to leave room:', err);
         alert('Failed to leave room');
       }
     }
