@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { messages, roomMembers } from '@/lib/db/schema';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 interface Session {
@@ -35,8 +35,7 @@ export async function sendMessage(formData: {
   const membership = await db
     .select()
     .from(roomMembers)
-    .where(eq(roomMembers.roomId, formData.roomId))
-    .where(eq(roomMembers.userId, session.user.id))
+    .where(and(eq(roomMembers.roomId, formData.roomId), eq(roomMembers.userId, session.user.id)))
     .limit(1);
 
   if (membership.length === 0) {
@@ -73,8 +72,7 @@ export async function getMessages(roomId: string, limit = 50) {
   const membership = await db
     .select()
     .from(roomMembers)
-    .where(eq(roomMembers.roomId, roomId))
-    .where(eq(roomMembers.userId, session.user.id))
+    .where(and(eq(roomMembers.roomId, roomId), eq(roomMembers.userId, session.user.id)))
     .limit(1);
 
   if (membership.length === 0) {

@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - '3006:3000'
+      - '3007:3000'
     environment:
       - DATABASE_URL=postgresql://chat_user:chat_password@postgres:5432/chat_db
       - REDIS_URL=redis://redis:6379
